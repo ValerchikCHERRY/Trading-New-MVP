@@ -53,3 +53,34 @@ app.post('/api/payment/deposit', (req, res) => {
     }
   );
 });
+
+const TronWeb = require('tronweb');
+
+const tronWeb = new TronWeb({
+  fullHost: 'https://api.trongrid.io',
+  privateKey: process.env.TRON_PRIVATE_KEY
+});
+
+app.post('/api/payment/verify', async (req, res) => {
+  const { txHash, userId, amount } = req.body;
+  
+  try {
+    const tx = await tronWeb.trx.getTransaction(txHash);
+    
+    // Проверка: 
+    // - Адрес получателя (ваш кошелек)
+    // - Сумма
+    // - Статус транзакции
+    if(tx.to !== process.env.WALLET_ADDRESS) throw new Error('Invalid recipient');
+    if(tx.amount < amount) throw new Error('Insufficient amount');
+    if(!tx.ret[0].contractRet === 'SUCCESS') throw new Error('Transaction failed');
+    
+    // Обновление баланса в БД
+    pool.query('UPDATE users SET balance = balance + $1 WHERE id = $2', 
+      [amount, userId]);
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
