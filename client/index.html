@@ -1055,7 +1055,37 @@
       showNotification(`"${title}" closed successfully!`, false);
     }
   }
+// client/index.html (в конце body)
+async function initApp() {
+  // Проверка авторизации
+  const user = await fetch('/api/auth/check').then(res => res.json());
+  if(!user) window.location.href = '/login';
 
+  // Загрузка данных
+  const [balance, bundles] = await Promise.all([
+    fetch('/api/user/balance').then(res => res.json()),
+    fetch('/api/bundles').then(res => res.json())
+  ]);
+
+  // Обновление UI
+  document.getElementById('balance').innerText = balance.total;
+  renderBundles(bundles);
+}
+
+// Пример функции для инвестирования
+async function invest(bundleId, amount) {
+  const response = await fetch('/api/invest', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ bundleId, amount })
+  });
+  
+  if(response.ok) {
+    alert('Investment successful!');
+  } else {
+    alert('Error: ' + (await response.text()));
+  }
+}
   // ===== ИНИЦИАЛИЗАЦИЯ =====
   document.addEventListener('DOMContentLoaded', () => {
     // Восстановление обработчиков
