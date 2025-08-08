@@ -32,3 +32,24 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Эмуляция платежной системы
+app.post('/api/payment/deposit', (req, res) => {
+  const { amount, userId } = req.body;
+  
+  // В реальности: проверка транзакции в блокчейне
+  // Для MVP просто увеличиваем баланс
+  pool.query(
+    'UPDATE users SET balance = balance + $1 WHERE id = $2',
+    [amount, userId],
+    (err) => {
+      if(err) return res.status(500).send('Database error');
+      
+      // Эмуляция успешного платежа
+      res.json({
+        success: true,
+        newBalance: balance + amount
+      });
+    }
+  );
+});
